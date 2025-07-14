@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modern Tic Tac Toe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(120deg, #232526 0%, #414345 100%);
+      font-family: 'Montserrat', Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .game-container {
+      background: rgba(44,46,56,0.95);
+      border-radius: 32px;
+      box-shadow: 0 8px 32px #0d192b88;
+      padding: 42px 36px 30px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 360px;
+      max-width: 95vw;
+    }
+    .title {
+      font-size: 2.5rem;
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      text-align: center;
+      text-shadow: 0 2px 18px #1de9b6;
+    }
+    .subtitle {
+      font-size: 1.04rem;
+      color: #cfd8dc;
+      margin-bottom: 24px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 74px);
+      grid-template-rows: repeat(3, 74px);
+      gap: 13px;
+      background: #232526;
+      border-radius: 18px;
+      box-shadow: 0 4px 22px #ff415c33;
+      margin-bottom: 24px;
+    }
+    .cell {
+      background: #282731;
+      border-radius: 12px;
+      font-size: 2.8rem;
+      color: #ff415c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 0 transparent;
+      position: relative;
+      user-select: none;
+    }
+    .cell[data-value="O"] {
+      color: #1de9b6;
+      text-shadow: 0 1px 8px #1de9b688;
+    }
+    .cell[data-value="X"] {
+      color: #ff415c;
+      text-shadow: 0 1px 8px #ff415c99;
+    }
+    .cell:hover {
+      background: #353544;
+      box-shadow: 0 0 14px #1de9b6a0;
+    }
+    .cell.winning {
+      background: #1de9b6;
+      color: #fff !important;
+      box-shadow: 0 0 22px #1de9b6ee;
+      font-weight: bold;
+    }
+    .status {
+      font-size: 1.25rem;
+      color: #fff;
+      margin-bottom: 18px;
+      text-align: center;
+      min-height: 32px;
+      letter-spacing: 1px;
+      font-weight: 600;
+      text-shadow: 0 0 6px #1de9b6;
+    }
+    .controls {
+      display: flex;
+      gap: 18px;
+      margin-top: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+    .btn {
+      padding: 11px 28px;
+      font-size: 1.05rem;
+      color: #fff;
+      font-weight: 600;
+      background: linear-gradient(135deg, #ff415c 70%, #1de9b6 100%);
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px #ff415c55;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.18s;
+      outline: none;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+      border: 1px solid #fff;
+    }
+    .btn:active {
+      background: linear-gradient(135deg, #1de9b6 70%, #ff415c 100%);
+      transform: scale(0.97);
+    }
+    @media (max-width: 600px) {
+      .game-container { padding: 18px 2vw; min-width: unset; }
+      .board { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); gap: 7px;}
+      .cell { font-size: 1.7rem;}
+      .title { font-size: 1.3rem;}
+      .subtitle { font-size: 0.93rem;}
+      .btn { padding: 7px 13px; font-size: 0.93rem;}
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="title">Tic Tac Toe</div>
+    <div class="status" id="status"></div>
+    <div class="board" id="board"></div>
+    <div class="controls">
+      <button class="btn" id="restartBtn">Restart</button>
+      <button class="btn" id="swapBtn">Swap First Player</button>
+    </div>
+  </div>
+  <script>
+    const boardElem = document.getElementById('board');
+    const statusElem = document.getElementById('status');
+    const restartBtn = document.getElementById('restartBtn');
+    const swapBtn = document.getElementById('swapBtn');
+    let board = Array(9).fill(null);
+    let currentPlayer = 'X';
+    let gameActive = true;
+    let firstPlayer = 'X';
+
+    function renderBoard() {
+      boardElem.innerHTML = '';
+      board.forEach((value, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.setAttribute('data-value', value || '');
+        cell.textContent = value || '';
+        cell.addEventListener('click', () => handleCellClick(i));
+        boardElem.appendChild(cell);
+      });
+    }
+
+    function handleCellClick(index) {
+      if (!gameActive || board[index]) return;
+      board[index] = currentPlayer;
+      renderBoard();
+      const win = checkWinner();
+      if (win) {
+        statusElem.textContent = `Player ${currentPlayer} wins!`;
+        highlightWinningCells(win);
+        gameActive = false;
+      } else if (board.every(cell => cell)) {
+        statusElem.textContent = "It's a draw!";
+        gameActive = false;
+      } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        statusElem.textContent = `Player ${currentPlayer}'s turn`;
+      }
+    }
+
+    function highlightWinningCells(winIndexes) {
+      const cells = document.querySelectorAll('.cell');
+      winIndexes.forEach(idx => {
+        cells[idx].classList.add('winning');
+      });
+    }
+
+    function checkWinner() {
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for (let win of wins) {
+        const [a, b, c] = win;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          return win;
+        }
+      }
+      return null;
+    }
+
+    function restartGame() {
+      board = Array(9).fill(null);
+      currentPlayer = firstPlayer;
+      gameActive = true;
+      statusElem.textContent = `Player ${currentPlayer}'s turn`;
+      renderBoard();
+    }
+
+    function swapFirstPlayer() {
+      firstPlayer = firstPlayer === 'X' ? 'O' : 'X';
+      restartGame();
+    }
+
+    restartBtn.addEventListener('click', restartGame);
+    swapBtn.addEventListener('click', swapFirstPlayer);
+
+    // Initial render
+    restartGame();
+  </script>
+</body>
+</html>
